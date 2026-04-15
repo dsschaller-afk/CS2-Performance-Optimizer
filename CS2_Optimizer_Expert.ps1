@@ -1,7 +1,7 @@
 # ==============================================================================
-# CS2 PERFORMANCE OPTIMIZER - ELITE TIER SYSTEM
+# DYNAMIC SYSTEM PROFILER & OPTIMIZER (v2.0)
 # ==============================================================================
-# ZIEL: Skalierbare Latenz-Optimierung (Daily Driver bis eSport Pro)
+# ZIEL: Automatischer Hardware-Scan -> Adaptives Tuning
 # AUTOR: Antigravity System Engineer
 # ==============================================================================
 
@@ -11,85 +11,136 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit
 }
 
-$BackupPath = "$PSScriptRoot\system_backup_tier.json"
+$BackupPath = "$PSScriptRoot\system_backup_v2.json"
 
-function Backup-Settings {
-    Write-Host "Erstelle Backup der aktuellen Services & Registry..." -ForegroundColor Gray
-    # Erstellt bei der ersten Ausführung eine Sicherung kritischer Dienste
-    $backup = @{
-        SysMain = (Get-Service SysMain -ErrorAction SilentlyContinue).StartType
-        WSearch = (Get-Service WSearch -ErrorAction SilentlyContinue).StartType
-        DiagTrack = (Get-Service DiagTrack -ErrorAction SilentlyContinue).StartType
+# Globale Variablen für den State
+$global:SysInfo = @{}
+$global:Warnings = @()
+
+function Run-DeepScan {
+    Clear-Host
+    Write-Host "[INIT] Führe Hardware & OS Profiling durch..." -ForegroundColor Cyan
+    
+    # 1. CPU Scan
+    $cpu = Get-CimInstance Win32_Processor
+    $global:SysInfo.CPU = $cpu.Name
+    $global:SysInfo.CPUCores = $cpu.NumberOfCores
+    
+    # 2. GPU Scan
+    $gpu = Get-CimInstance Win32_VideoController
+    if ($gpu) {
+        $primaryGpu = $gpu[0]
+        $global:SysInfo.GPU = $primaryGpu.Name
+        $global:SysInfo.DisplayHz = $primaryGpu.CurrentRefreshRate
+        
+        if ($primaryGpu.Name -match "NVIDIA") { $global:SysInfo.GPUVendor = "NVIDIA" }
+        elseif ($primaryGpu.Name -match "AMD") { $global:SysInfo.GPUVendor = "AMD" }
+        else { $global:SysInfo.GPUVendor = "UNKNOWN" }
+        
+        if ($primaryGpu.CurrentRefreshRate -le 60 -and $primaryGpu.CurrentRefreshRate -ne $null) {
+            $global:Warnings += "![CRITICAL] Monitor läuft auf $($primaryGpu.CurrentRefreshRate)Hz! Input Lag massiv."
+        }
     }
-    $backup | ConvertTo-Json | Out-File $BackupPath -ErrorAction SilentlyContinue
-    Write-Host "Backup gesichert." -ForegroundColor Green
+    
+    # 3. RAM Scan
+    $ram = Get-CimInstance Win32_PhysicalMemory
+    $global:SysInfo.RAMConfig = $ram.Count
+    if ($ram.Count -eq 4) {
+        $global:Warnings += "![WARN] RAM Vollbestückung (4 Module) erhöht System-Latenz leicht."
+    }
+    
+    Start-Sleep -Seconds 1
 }
 
-function Apply-Tier1 {
-    Write-Host "`n[TIER 1] Wende Daily Driver Optimierungen an..." -ForegroundColor Cyan
+function Show-Dashboard {
+    Clear-Host
+    Write-Host "================================================" -ForegroundColor Magenta
+    Write-Host "    DYNAMIC SYSTEM PROFILER - DASHBOARD         " -ForegroundColor Magenta
+    Write-Host "================================================" -ForegroundColor Magenta
+    Write-Host "CPU:      $($global:SysInfo.CPU) ($($global:SysInfo.CPUCores) Cores)"
+    Write-Host "GPU:      $($global:SysInfo.GPU)"
+    Write-Host "DISPLAY:  $($global:SysInfo.DisplayHz) Hz"
+    Write-Host "------------------------------------------------"
+    
+    if ($global:Warnings.Count -gt 0) {
+        Write-Host "⚠️ SYSTEM WARNUNGEN:" -ForegroundColor Yellow
+        foreach ($warn in $global:Warnings) { Write-Host $warn -ForegroundColor Yellow }
+        Write-Host "------------------------------------------------"
+    }
+
+    Write-Host "1. [KERNEL] Windows OS Core (Energie, Background, Network)"
+    if ($global:SysInfo.GPUVendor -eq "NVIDIA") {
+        Write-Host "2. [NVIDIA] Exklusiv: MSI-Mode & Reflex Backend forcieren" -ForegroundColor Green
+    } else {
+        Write-Host "2. [GPU] Vendor spezifisches Skript (Nicht verfügbar)" -ForegroundColor DarkGray
+    }
+    Write-Host "3. [GAME] CS2 Engine Optimierung (Sub-Tick & Rate generieren)"
+    Write-Host "4. [ALL] Alle passenden Optimierungen ausführen"
+    Write-Host "5. Beenden"
+    Write-Host "================================================"
+}
+
+function Optimize-Kernel {
+    Write-Host "`nOptimiere Windows Kernel..." -ForegroundColor Cyan
     # Ultimate Performance Plan
     $pwr = powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61
     powercfg -setactive ($pwr -split ' ')[3]
-    # Game Mode & App Suspension
+    # Game Mode & Network Throttling
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -Value 1 -ErrorAction SilentlyContinue
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -Value 1 -ErrorAction SilentlyContinue
-    # Network Throttling Override
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "NetworkThrottlingIndex" -Value 0xffffffff -ErrorAction SilentlyContinue
-    Write-Host "Tier 1: Abgeschlossen." -ForegroundColor Green
+    Write-Host "Kernel Optimierung abgeschlossen." -ForegroundColor Green
 }
 
-function Apply-Tier2 {
-    Apply-Tier1
-    Write-Host "`n[TIER 2] Wende Enthusiast Optimierungen an..." -ForegroundColor Cyan
-    # Telemetry Blocker
-    Set-Service -Name DiagTrack -StartupType Disabled -ErrorAction SilentlyContinue
-    Stop-Service -Name DiagTrack -Force -ErrorAction SilentlyContinue
-    # Delivery Optimization deaktivieren (P2P Update Sharing)
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config" -Name "DODownloadMode" -Value 0 -ErrorAction SilentlyContinue
+function Optimize-NvidiaPlatform {
+    if ($global:SysInfo.GPUVendor -ne "NVIDIA") { return }
+    Write-Host "`nOptimiere NVIDIA Plattform..." -ForegroundColor Cyan
     # GPU MSI Mode Injection (Message Signaled Interrupts)
-    $gpu = Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Enum\PCI" -Recurse | Where-Object { $_.GetValue("DeviceDesc") -match "RTX 3070" }
-    if ($gpu) {
-        $msiPath = "$($gpu.PSPath)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-        if (-not (Test-Path $msiPath)) { New-Item -Path $msiPath -Force | Out-Null }
-        Set-ItemProperty -Path $msiPath -Name "MSISupported" -Value 1
-        Write-Host "MSI-Mode für RTX 3070 erzwungen." -ForegroundColor Magenta
+    $gpuPath = Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Enum\PCI" -Recurse | Where-Object { $_.GetValue("DeviceDesc") -match "RTX 3070" -or $_.GetValue("DeviceDesc") -match "NVIDIA" }
+    if ($gpuPath) {
+        foreach ($path in $gpuPath) {
+            $msiPath = "$($path.PSPath)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+            if (-not (Test-Path $msiPath)) { New-Item -Path $msiPath -Force | Out-Null }
+            Set-ItemProperty -Path $msiPath -Name "MSISupported" -Value 1
+        }
+        Write-Host "NVIDIA MSI-Mode erzwungen (Verringert GPU Interrupt Delay)." -ForegroundColor Green
     }
-    Write-Host "Tier 2: Abgeschlossen." -ForegroundColor Green
 }
 
-function Apply-Tier3 {
-    Apply-Tier2
-    Write-Host "`n[TIER 3] Wende God-Tier eSport Optimierungen an..." -ForegroundColor Red
-    Write-Host "WARNUNG: Die Windows-Suche und das Dateicaching werden nun im Kernel blockiert." -ForegroundColor Yellow
+function Optimize-CS2Engine {
+    Write-Host "`nGeneriere CS2 Engine Files..." -ForegroundColor Cyan
+    $DesktopPath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "CS2_Config")
+    if (-not (Test-Path $DesktopPath)) { New-Item -ItemType Directory -Path $DesktopPath }
     
-    # SysMain (SuperFetch) killen -> Verhindert Disk/RAM I/O im Hintergrund
-    Set-Service -Name SysMain -StartupType Disabled -ErrorAction SilentlyContinue
-    Stop-Service -Name SysMain -Force -ErrorAction SilentlyContinue
-    
-    # Windows Search Indexer killen -> Verhindert CPU-Spikes durch HDD-Scanning
-    Set-Service -Name WSearch -StartupType Disabled -ErrorAction SilentlyContinue
-    Stop-Service -Name WSearch -Force -ErrorAction SilentlyContinue
-    
-    Write-Host "Tier 3: Extreme Stripping Abgeschlossen. Bitte System neu starten!" -ForegroundColor Green
+    $autoexec = @"
+rate "786432"
+fps_max "400"
+engine_low_latency_sleep_after_client_tick "1"
+cl_updaterate 128
+cl_interp_ratio 1
+cl_interp 0
+"@
+    $autoexec | Out-File "$DesktopPath\autoexec.cfg"
+    Write-Host "CS2 Dateien auf Desktop gespeichert." -ForegroundColor Green
 }
 
-# --- MAIN MENU ---
+# --- MAIN LOOP ---
+Run-DeepScan
+
 do {
-    Clear-Host
-    Write-Host "========================================" -ForegroundColor Magenta
-    Write-Host "   CS2 OPTIMIZER - TIER SELECTION       " -ForegroundColor Magenta
-    Write-Host "========================================" -ForegroundColor Magenta
-    Write-Host "1. [TIER 1] Daily Driver (Sicher & Schnell)" -ForegroundColor White
-    Write-Host "2. [TIER 2] Enthusiast (+ Telemetrie aus, + MSI Mode)" -ForegroundColor Yellow
-    Write-Host "3. [TIER 3] God-Tier Pro (+ Aggressives OS-Stripping)" -ForegroundColor Red
-    Write-Host "5. Beenden"
-    Write-Host "----------------------------------------"
-    $choice = Read-Host "Wähle deine Optimierungs-Stufe"
+    Show-Dashboard
+    $choice = Read-Host "Wähle eine Aktion"
 
     switch ($choice) {
-        '1' { Backup-Settings; Apply-Tier1; Pause }
-        '2' { Backup-Settings; Apply-Tier2; Pause }
-        '3' { Backup-Settings; Apply-Tier3; Pause }
+        '1' { Optimize-Kernel; Pause }
+        '2' { Optimize-NvidiaPlatform; Pause }
+        '3' { Optimize-CS2Engine; Pause }
+        '4' { 
+            Optimize-Kernel
+            Optimize-NvidiaPlatform
+            Optimize-CS2Engine
+            Write-Host "`nVOLLSTÄNDIGE OPTIMIERUNG ABGESCHLOSSEN!" -ForegroundColor Magenta
+            Pause 
+        }
         '5' { exit }
     }
 } while ($true)
