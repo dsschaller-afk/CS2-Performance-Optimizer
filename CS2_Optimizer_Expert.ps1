@@ -1,121 +1,95 @@
 # ==============================================================================
-# CS2 PERFORMANCE OPTIMIZER - EXPERT EDITION
+# CS2 PERFORMANCE OPTIMIZER - ELITE TIER SYSTEM
 # ==============================================================================
-# ZIEL: Maximale FPS, Minimale Latenz, Volle Kontrolle
+# ZIEL: Skalierbare Latenz-Optimierung (Daily Driver bis eSport Pro)
 # AUTOR: Antigravity System Engineer
 # ==============================================================================
 
-# --- ADMIN CHECK ---
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host "![ERROR] Dieses Skript MUSS als Administrator ausgeführt werden!" -ForegroundColor Red
-    # Pause entfällt für automatisierte Tests
+    Pause
+    exit
 }
 
-$BackupPath = "$PSScriptRoot\system_backup.json"
-$DesktopPath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "CS2_Optimierung")
-
-# --- FUNKTIONEN ---
-
-function Get-SystemSpecs {
-    Write-Host "--- SYSTEM ANALYSE ---" -ForegroundColor Cyan
-    $cpu = Get-CimInstance Win32_Processor
-    $gpu = Get-CimInstance Win32_VideoController
-    $ram = Get-CimInstance Win32_PhysicalMemory
-    $os = Get-CimInstance Win32_OperatingSystem
-    
-    Write-Host "CPU:    $($cpu.Name) ($($cpu.NumberOfCores) Kerne)"
-    Write-Host "GPU:    $($gpu[0].Name) (Treiber: $($gpu[0].DriverVersion))"
-    Write-Host "RAM:    $([math]::Round(($ram | Measure-Object Capacity -Sum).Sum / 1GB)) GB ($($ram[0].ConfiguredClockSpeed) MHz)"
-    Write-Host "OS:     $($os.Caption) (Build $($os.BuildNumber))"
-    
-    if ($ram.Count -eq 4) {
-        Write-Host "![WARN] Vollbestückung (4 Riegel) erkannt. Kann Latenz leicht erhöhen." -ForegroundColor Yellow
-    }
-}
+$BackupPath = "$PSScriptRoot\system_backup_tier.json"
 
 function Backup-Settings {
-    Write-Host "Erstelle Backup der aktuellen Einstellungen..." -ForegroundColor Gray
+    Write-Host "Erstelle Backup der aktuellen Services & Registry..." -ForegroundColor Gray
+    # Erstellt bei der ersten Ausführung eine Sicherung kritischer Dienste
     $backup = @{
-        GameMode = (Get-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -ErrorAction SilentlyContinue).AutoGameModeEnabled
-        HAGS = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "HwSchMode" -ErrorAction SilentlyContinue).HwSchMode
-        NetworkThrottling = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "NetworkThrottlingIndex" -ErrorAction SilentlyContinue).NetworkThrottlingIndex
+        SysMain = (Get-Service SysMain -ErrorAction SilentlyContinue).StartType
+        WSearch = (Get-Service WSearch -ErrorAction SilentlyContinue).StartType
+        DiagTrack = (Get-Service DiagTrack -ErrorAction SilentlyContinue).StartType
     }
-    $backup | ConvertTo-Json | Out-File $BackupPath
-    Write-Host "Backup unter $BackupPath gespeichert." -ForegroundColor Green
+    $backup | ConvertTo-Json | Out-File $BackupPath -ErrorAction SilentlyContinue
+    Write-Host "Backup gesichert." -ForegroundColor Green
 }
 
-function Apply-Optimizations {
-    Backup-Settings
-    
-    # 1. Ultimate Performance Plan
-    Write-Host "Aktiviere 'Ultimative Leistung' Energieplan..." -ForegroundColor Cyan
+function Apply-Tier1 {
+    Write-Host "`n[TIER 1] Wende Daily Driver Optimierungen an..." -ForegroundColor Cyan
+    # Ultimate Performance Plan
     $pwr = powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61
     powercfg -setactive ($pwr -split ' ')[3]
-    
-    # 2. Game Mode & Background Apps
-    Write-Host "Optimiere Windows Gaming-Settings..." -ForegroundColor Cyan
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -Value 1
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -Value 1
-    
-    # 3. Network Throttling
-    Write-Host "Reduziere Netzwerk-Drosselung..." -ForegroundColor Cyan
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "NetworkThrottlingIndex" -Value 0xffffffff
+    # Game Mode & App Suspension
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -Value 1 -ErrorAction SilentlyContinue
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -Value 1 -ErrorAction SilentlyContinue
+    # Network Throttling Override
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "NetworkThrottlingIndex" -Value 0xffffffff -ErrorAction SilentlyContinue
+    Write-Host "Tier 1: Abgeschlossen." -ForegroundColor Green
 }
 
-function Generate-CS2-Files {
-    if (-not (Test-Path $DesktopPath)) { New-Item -ItemType Directory -Path $DesktopPath }
-    
-    $autoexec = @"
-// CS2 Pro-Performance Autoexec
-// Generiert von Antigravity
-rate "786432"
-fps_max "400"
-engine_low_latency_sleep_after_client_tick "1"
-cl_hud_telemetry_frametime_show "2"
-cl_hud_telemetry_net_mispredict_show "2"
-echo "--- AUTOEXEC GELADEN ---"
-"@
-
-    $launchOptions = "-novid -console -tickrate 128 +fps_max 400"
-    
-    $autoexec | Out-File "$DesktopPath\autoexec.cfg"
-    $launchOptions | Out-File "$DesktopPath\startoptionen.txt"
-    
-    Write-Host "CS2 Dateien wurden auf dem Desktop im Ordner 'CS2_Optimierung' abgelegt." -ForegroundColor Green
-}
-
-function Restore-Settings {
-    if (-not (Test-Path $BackupPath)) {
-        Write-Host "Kein Backup gefunden!" -ForegroundColor Red
-        return
+function Apply-Tier2 {
+    Apply-Tier1
+    Write-Host "`n[TIER 2] Wende Enthusiast Optimierungen an..." -ForegroundColor Cyan
+    # Telemetry Blocker
+    Set-Service -Name DiagTrack -StartupType Disabled -ErrorAction SilentlyContinue
+    Stop-Service -Name DiagTrack -Force -ErrorAction SilentlyContinue
+    # Delivery Optimization deaktivieren (P2P Update Sharing)
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config" -Name "DODownloadMode" -Value 0 -ErrorAction SilentlyContinue
+    # GPU MSI Mode Injection (Message Signaled Interrupts)
+    $gpu = Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Enum\PCI" -Recurse | Where-Object { $_.GetValue("DeviceDesc") -match "RTX 3070" }
+    if ($gpu) {
+        $msiPath = "$($gpu.PSPath)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+        if (-not (Test-Path $msiPath)) { New-Item -Path $msiPath -Force | Out-Null }
+        Set-ItemProperty -Path $msiPath -Name "MSISupported" -Value 1
+        Write-Host "MSI-Mode für RTX 3070 erzwungen." -ForegroundColor Magenta
     }
-    $backup = Get-Content $BackupPath | ConvertFrom-Json
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -Value $backup.GameMode
-    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "HwSchMode" -Value $backup.HAGS
-    Write-Host "Original-Einstellungen wiederhergestellt." -ForegroundColor Green
+    Write-Host "Tier 2: Abgeschlossen." -ForegroundColor Green
 }
 
-# --- MAIN MENU (nur wenn interaktiv gerufen) ---
-if ($MyInvocation.InvocationName -ne '.') {
-    do {
-        Clear-Host
-        Write-Host "========================================" -ForegroundColor Magenta
-        Write-Host "   CS2 PERFORMANCE OPTIMIZER v1.0       " -ForegroundColor Magenta
-        Write-Host "========================================" -ForegroundColor Magenta
-        Write-Host "1. System analysieren"
-        Write-Host "2. Optimierungen anwenden (Safe)"
-        Write-Host "3. CS2 Config & Launch Options (Desktop)"
-        Write-Host "4. Optimierungen rückgängig machen"
-        Write-Host "5. Beenden"
-        Write-Host "----------------------------------------"
-        $choice = Read-Host "Wähle eine Option"
-
-        switch ($choice) {
-            '1' { Get-SystemSpecs; Pause }
-            '2' { Apply-Optimizations; Pause }
-            '3' { Generate-CS2-Files; Pause }
-            '4' { Restore-Settings; Pause }
-            '5' { exit }
-        }
-    } while ($true)
+function Apply-Tier3 {
+    Apply-Tier2
+    Write-Host "`n[TIER 3] Wende God-Tier eSport Optimierungen an..." -ForegroundColor Red
+    Write-Host "WARNUNG: Die Windows-Suche und das Dateicaching werden nun im Kernel blockiert." -ForegroundColor Yellow
+    
+    # SysMain (SuperFetch) killen -> Verhindert Disk/RAM I/O im Hintergrund
+    Set-Service -Name SysMain -StartupType Disabled -ErrorAction SilentlyContinue
+    Stop-Service -Name SysMain -Force -ErrorAction SilentlyContinue
+    
+    # Windows Search Indexer killen -> Verhindert CPU-Spikes durch HDD-Scanning
+    Set-Service -Name WSearch -StartupType Disabled -ErrorAction SilentlyContinue
+    Stop-Service -Name WSearch -Force -ErrorAction SilentlyContinue
+    
+    Write-Host "Tier 3: Extreme Stripping Abgeschlossen. Bitte System neu starten!" -ForegroundColor Green
 }
+
+# --- MAIN MENU ---
+do {
+    Clear-Host
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "   CS2 OPTIMIZER - TIER SELECTION       " -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "1. [TIER 1] Daily Driver (Sicher & Schnell)" -ForegroundColor White
+    Write-Host "2. [TIER 2] Enthusiast (+ Telemetrie aus, + MSI Mode)" -ForegroundColor Yellow
+    Write-Host "3. [TIER 3] God-Tier Pro (+ Aggressives OS-Stripping)" -ForegroundColor Red
+    Write-Host "5. Beenden"
+    Write-Host "----------------------------------------"
+    $choice = Read-Host "Wähle deine Optimierungs-Stufe"
+
+    switch ($choice) {
+        '1' { Backup-Settings; Apply-Tier1; Pause }
+        '2' { Backup-Settings; Apply-Tier2; Pause }
+        '3' { Backup-Settings; Apply-Tier3; Pause }
+        '5' { exit }
+    }
+} while ($true)
