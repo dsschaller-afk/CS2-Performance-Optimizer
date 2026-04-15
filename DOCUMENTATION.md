@@ -2,6 +2,11 @@
 
 Diese Dokumentation erklärt die technischen Hintergründe und die Wirkungsweise der im Skript verwendeten Optimierungen.
 
+## 0. Dynamic Profiler V2 (Die Scan-Engine)
+Die Version 2.0 führt eine C#-basierte WMI-Analyse ein, die das System vor dem Start scannt:
+- **GPU Validation:** Der Profiler validiert den Vendor (NVIDIA/AMD). Hardware-Tuning wie der MSI-Modus (der bei falschen Treibern Bluescreens verursachen kann) wird nur freigeschaltet, wenn der passende Chip erkannt wird.
+- **Hz-Guard:** Prüft die EDID/Display-Register auf die aktuell anliegende Bildfrequenz. Erkennt das System in CS2 tödliche Rücksetzer auf 60Hz, sendet es eine visuelle Warnung in das Dashboard.
+
 ## 1. Energieverwaltung (Ultimate Performance)
 Windows nutzt standardmäßig Profile, die CPU-Kerne bei geringer Last parken oder die Spannung drosseln. In CS2 führt dies zu unregelmäßigen Frametimes (Jitter).
 - **GUID:** `e9a42b02-d5df-448d-aa00-03f14749eb61`

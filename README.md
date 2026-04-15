@@ -19,17 +19,23 @@ xychart-beta
 ```
 *Messung zeigt eine 66%-ige Reduzierung der Scheduling-Latenz und Input-Varianz, ermittelt durch 100 synthetische Kernel-Timer-Iterationen.*
 
-## 🚀 Kern-Features
+## 🚀 Kern-Features (v2.0)
 
-### 1. System-Level Optimierung
-- **Ultimate Performance Plan:** Schaltet den versteckten Windows-Energieplan frei, um CPU-Core-Parking zu verhindern.
-- **Network Throttling Bypass:** Deaktiviert die künstliche Windows-Netzwerkdrosselung für Spiele-Pakete.
-- **Background-App Suppression:** Minimaler System-Overhead durch Deaktivierung unnötiger UWP-Hintergrundprozesse.
+### 1. Dynamic Hardware Scanner
+Bevor Tweaks angewandt werden, scannt das System die Hardware in Millisekunden:
+- Erkennt CPU Architektur & Cores.
+- Erkennt GPU Vendor (NVIDIA/AMD) und schaltet exklusive Menüs frei.
+- **Hz-Guard:** Prüft die aktive Bildwiederholrate und warnt vor 60Hz Latenzfallen.
+- Prüft RAM-Topologie (Warnt bei Latenz-Anfälligkeit durch Vollbestückung).
 
-### 2. CS2 Engine-Tuning
+### 2. System-Level Optimierung
+- **Ultimate Performance Plan:** Schaltet den versteckten Windows-Energieplan frei.
+- **Network Throttling Bypass:** Deaktiviert die künstliche Windows-Netzwerkdrosselung.
+
+### 3. CS2 & NVIDIA Plattform
+- **MSI-Mode Injection:** Verlagert NVIDIA-Interrupts auf priorisierte Lanes zur Verzögerungsminimierung.
 - **Sub-Tick Optimal Config:** Generiert eine Autoexec mit optimierten `rate`- und `interp`-Werten.
-- **NVIDIA Reflex Integration:** Korrekte Konfiguration des Low-Latency-Sleep-Verhaltens.
-- **120Hz Monitor Bypass:** Spezial-Logik für ältere High-Hz Monitore (wie BenQ XL2411Z) am HDMI-Anschluss.
+
 
 ## 🛠 Installation & Nutzung
 
