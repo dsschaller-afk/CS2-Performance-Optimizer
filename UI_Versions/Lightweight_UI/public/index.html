@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity System Profiler</title>
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #ff2a5f;
+            --accent-glow: #ff2a5f66;
+            --text-main: #ffffff;
+            --text-dim: #8b8b9e;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 42, 95, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(70, 42, 255, 0.1), transparent 25%);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            margin: 0;
+            background: linear-gradient(90deg, #fff, #ff2a5f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .glass-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px var(--accent-glow);
+        }
+
+        .glass-panel h2 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--accent);
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Tweak Cards */
+        .tweak-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tweak-info h3 { margin: 0 0 0.5rem 0; font-size: 1.2rem; }
+        .tweak-info p { margin: 0; color: var(--text-dim); font-size: 0.9rem; }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
+        .btn:active { transform: scale(0.95); }
+
+        /* Benchmark Area */
+        .chart-container {
+            height: 300px;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>CS2 Profiler</h1>
+        <p style="color: var(--text-dim);">eSport Setup & Telemetry Dashboard</p>
+    </div>
+
+    <div class="container">
+        
+        <!-- Left Column: Controls -->
+        <div class="glass-panel">
+            <h2>⚙️ System Tuning</h2>
+            
+            <div class="tweak-card">
+                <div class="tweak-info">
+                    <h3>MSI-Mode (NVIDIA)</h3>
+                    <p>Verlagert Interrupts der GPU für ~10% reduzierten Input Lag.</p>
+                </div>
+                <button class="btn" onclick="applyTweak('MSI', this)">Aktivieren</button>
+            </div>
+
+            <div class="tweak-card">
+                <div class="tweak-info">
+                    <h3>Ultimate Power Plan</h3>
+                    <p>Deaktiviert CPU-Core-Parking für stabilere Frametimes.</p>
+                </div>
+                <button class="btn" onclick="applyTweak('POWER', this)">Aktivieren</button>
+            </div>
+            
+            <div class="tweak-card">
+                <div class="tweak-info">
+                    <h3>Game-Config: FPS MAX</h3>
+                    <p>Uncapped FPS / 400 FPS CS2 Engine Optimization.</p>
+                </div>
+                <button class="btn" onclick="alert('Feature in V2')">Generieren</button>
+            </div>
+        </div>
+
+        <!-- Right Column: Graphs -->
+        <div class="glass-panel">
+            <h2>📊 Live Kernel Benchmark</h2>
+            <p style="color: var(--text-dim); margin-top: 0;">Messe die Scheduling Latenz (in ms) deines Systems.</p>
+            <button class="btn" style="width: 100%; margin-bottom: 1rem;" onclick="runBenchmark()">Starte Messung</button>
+            
+            <div class="chart-container">
+                <canvas id="latencyChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const ctx = document.getElementById('latencyChart').getContext('2d');
+        let dataPoints = [1.8, 1.75, 1.82, 1.7, 1.9]; // Placeholder data
+        
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Test 1', 'Test 2', 'Test 3', 'Test 4', 'Test 5'],
+                datasets: [{
+                    label: 'System Jitter (ms)',
+                    data: dataPoints,
+                    borderColor: '#ff2a5f',
+                    backgroundColor: 'rgba(255, 42, 95, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 3,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#8b8b9e' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#8b8b9e' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                }
+            }
+        });
+
+        async function applyTweak(type, btnObj) {
+            const originalText = btnObj.innerText;
+            btnObj.innerText = "Laden...";
+            btnObj.style.opacity = "0.5";
+            
+            try {
+                const req = await fetch('http://localhost:3030/api/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ setupType: type })
+                });
+                const res = await req.json();
+                
+                btnObj.innerText = "Erledigt ✓";
+                btnObj.style.background = "#2a70ff";
+                btnObj.style.borderColor = "#2a70ff";
+                btnObj.style.opacity = "1";
+            } catch (err) {
+                btnObj.innerText = "Fehler!";
+            }
+            
+            setTimeout(() => { btnObj.innerText = "Aktiviert"; }, 2000);
+        }
+
+        async function runBenchmark() {
+            try {
+                const req = await fetch('http://localhost:3030/api/benchmark');
+                const res = await req.json();
+                
+                // Add new data point
+                chart.data.labels.push(`Test ${chart.data.labels.length + 1}`);
+                chart.data.datasets[0].data.push(res.latency);
+                
+                // Keep only last 8 points
+                if (chart.data.labels.length > 8) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+                
+                chart.update();
+            } catch (err) {
+                console.error("Benchmark error", err);
+            }
+        }
+    </script>
+</body>
+</html>
